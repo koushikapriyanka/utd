@@ -1,0 +1,108 @@
+<p id="notice">
+  <%= notice %>
+</p>
+<h1>Projects</h1>
+<%= select_tag 'sort_method', options_for_select([['Recent Projects', 'projects.id desc'],['Order By Category Name ASC', 'cat_name asc, projects.id desc'],['Order By Username Asc', 'username asc'],['Order By Project Title Asc', 'title asc']], params[:sort_method] ), {onchange: "paginateDataFetch(value,0)", class: 'form-control', style: 'float:right; width:20%; margin-right:2%'}  %>
+  <br>
+  <br>
+  <br>
+  
+  <table style="width: 100%" border=1>
+    <thead>
+      <tr>
+        <th>Project Title</th>
+        <th>username</th>
+        <th>Category</th>
+      </tr>
+    </thead>
+    <tbody id='table_body'>
+      <div id="data">
+        <% @projects.each do |project| %>
+          <tr>
+            <td>
+              <%= project.title %>
+            </td>
+            <td>
+              <%= project.username %>
+            </td>
+            <td>
+              <%= project.cat_name %>
+            </td>
+          </tr>
+          <% end %>
+      </div>
+    </tbody>
+  </table>
+  <div style="float: right">
+    <div id="page_navigation"></div>
+    <input type="hidden" name="current_page" id="current_page">
+    <input type="hidden" name="total_pages" id="total_pages" value="<%= @results.count / 2%>">
+  </div>
+  <br>
+  <script type="text/javascript">
+  $(document).ready(function() {
+    customPagination(2, <%= @results.count / 2 %>, <%= @page %>)
+  })
+
+  function customPagination(per_page, total_pages, page) {
+    var number_of_pages = total_pages
+    $('#current_page').val(page);
+    var navigation_html = '<ul class="pagination"><li class="previous_link"><a href="javascript:previous();">&larr; Previous</a></li>';
+    var current_link = 0;
+    while (number_of_pages > current_link) {
+      navigation_html += '<li class="page_link" id="id' + current_link + '"> <a href="javascript:go_to_page(' + current_link + ')" longdesc="' + current_link + '">' + (current_link + 1) + '</a></li>';
+      current_link++;
+    }
+    navigation_html += '<li><a class="next_link" href="javascript:next();">Next &rarr;</a></li></ul>';
+    $('#page_navigation').html(navigation_html);
+    $('#page_navigation .page_link:nth-child(' + (page + 2) + ')').addClass('active');
+    if (page == 0) {
+      $('#page_navigation .previous_link').addClass('disabled');
+    } else {
+      $('#page_navigation .previous_link').removeClass('disabled');
+    }
+    if (page >= total_pages - 1) {
+      $('#page_navigation .next_link').addClass('disabled');
+    } else {
+      $('#page_navigation .next_link').removeClass('disabled');
+    }
+    $('#content').children().css('display', 'none');
+  }
+
+  function previous() {
+    new_page = parseInt($('#current_page').val()) - 1;
+    if ($('.active').prev('.page_link').length == true) {
+      go_to_page(new_page);
+    }
+  }
+
+  function next() {
+    new_page = parseInt($('#current_page').val()) + 1;
+    if ($('.active').next('.page_link').length == true) {
+      go_to_page(new_page);
+    }
+  }
+
+  function go_to_page(page_num) {
+    var sort_method = $("#sort_method").val()
+    paginateDataFetch(sort_method, page_num)
+  }
+
+  function paginateDataFetch(value, page) {
+    html_data = '';
+    $.ajax({
+      url: "/projects.json?sort=" + value + '&page=' + page,
+      success: function(response) {
+        var data = response.data
+        for (var i = 0, l = data.length; i < l; i++) {
+          html_data += "<tr><td>" + data[i]['title'] + "</td><td>" + data[i]['username'] + "</td><td>" + data[i]['cat_name'] + "</td></tr>"
+        }
+        $("#table_body")[0].innerHTML = html_data;
+        customPagination(2, parseInt($('#total_pages').val()), page)
+      },
+      error: function(request, status, error) {
+        alert(request.responseText);
+      }
+    });
+  }
+  </script>
